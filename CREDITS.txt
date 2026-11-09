@@ -1,0 +1,8 @@
+Music
+  "Volatile Reaction" Kevin MacLeod (incompetech.com)
+  Licensed under Creative Commons: By Attribution 4.0 License
+  http://creativecommons.org/licenses/by/4.0/
+  File: audio/Volatile Reaction.mp3 (downloaded from incompetech.com, unmodified)
+
+Font
+  Lato by Łukasz Dziedzic, SIL Open Font License 1.1 (fonts/LICENSE-Lato.txt)

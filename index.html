@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demo | M2D Music Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27 fill=%27%236E1D1D%27%3E%3Crect x=%273%27 y=%2712%27 width=%273.4%27 height=%278%27 rx=%271.7%27/%3E%3Crect x=%279%27 y=%277%27 width=%273.4%27 height=%2718%27 rx=%271.7%27/%3E%3Crect x=%2715%27 y=%273%27 width=%273.4%27 height=%2726%27 rx=%271.7%27/%3E%3Crect x=%2721%27 y=%279%27 width=%273.4%27 height=%2714%27 rx=%271.7%27/%3E%3Crect x=%2727%27 y=%2713%27 width=%273.4%27 height=%276%27 rx=%271.7%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link visually-hidden" href="#content">Skip to the demo</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="3" y="12" width="3.4" height="8" rx="1.7"/><rect x="9" y="7" width="3.4" height="18" rx="1.7"/>
+        <rect x="15" y="3" width="3.4" height="26" rx="1.7"/><rect x="21" y="9" width="3.4" height="14" rx="1.7"/>
+        <rect x="27" y="13" width="3.4" height="6" rx="1.7"/>
+      </svg>
+      <span class="brand-name">M2D Music Dashboard</span>
+    </div>
+    <nav aria-label="Dashboard">
+      <ul class="tabs">
+        <li><a href="#" aria-disabled="true">Results</a></li>
+        <li><a href="#content" aria-current="page">Demo</a></li>
+        <li><a href="#" aria-disabled="true">About</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="content" tabindex="-1">
+    <form id="demo-form" class="panel input-panel" novalidate>
+      <h1 class="page-title">Try a music task</h1>
+
+      <fieldset class="step">
+        <legend><span class="step-num" aria-hidden="true">1</span>Choose a task</legend>
+        <div class="task-grid" id="task-grid"></div>
+      </fieldset>
+
+      <fieldset class="step" id="audio-step">
+        <legend><span class="step-num" aria-hidden="true">2</span>Provide audio</legend>
+
+        <div class="dropzone" id="dropzone">
+          <svg class="drop-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5" /><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+          </svg>
+          <p class="drop-title">Drop a WAV or MP3 file here</p>
+          <input type="file" id="file-input" name="audio" class="sr-input"
+                 accept=".wav,.mp3,audio/wav,audio/x-wav,audio/mpeg" aria-describedby="audio-hint">
+          <label for="file-input" class="button button-secondary">Browse files</label>
+          <p class="hint" id="audio-hint">At most 10 MB. Only the first 6 s are analyzed.</p>
+        </div>
+
+        <div class="file-card" id="file-card" hidden>
+          <div class="file-head">
+            <div class="file-text">
+              <p class="file-name" id="file-name"></p>
+              <p class="file-meta" id="file-meta"></p>
+            </div>
+            <button type="button" class="link-button" id="replace-file">Replace file</button>
+          </div>
+          <div class="wave-wrap" id="wave-wrap">
+            <canvas id="wave-canvas" aria-hidden="true"></canvas>
+            <div class="playhead" id="playhead" aria-hidden="true"></div>
+            <input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="Playback position">
+          </div>
+          <div class="player-row">
+            <button type="button" class="play-button" id="play-button" aria-label="Play">
+              <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+              <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+            </button>
+            <p class="time"><span id="time-now">0:00</span> / <span id="time-total">0:00</span></p>
+            <p class="window-legend"><span class="swatch" aria-hidden="true"></span>Analyzed window</p>
+          </div>
+          <p class="credit" id="credit" hidden></p>
+          <audio id="player" preload="auto"></audio>
+        </div>
+
+        <p class="message message-error" id="audio-error" role="alert"></p>
+        <p class="message message-note" id="audio-note"></p>
+      </fieldset>
+
+      <fieldset class="step">
+        <legend><span class="step-num" aria-hidden="true">3</span>Choose a model and run</legend>
+        <div class="model-list" id="model-list"></div>
+        <button type="submit" class="button button-primary" id="run-button">Run prediction</button>
+      </fieldset>
+
+      <p class="disclaimer">Demonstration only: predictions on single clips are not benchmark results. Uploaded audio is deleted after processing.</p>
+    </form>
+
+    <section class="panel process-panel" aria-labelledby="process-title">
+      <div class="process-head">
+        <h2 id="process-title">What happens to your clip</h2>
+        <p class="status" id="run-status">Waiting for a clip</p>
+      </div>
+
+      <div class="stage" id="stage" data-scene="idle">
+        <div class="scene scene-idle">
+          <p>Add a clip and run a prediction. Each processing step appears here, drawn from your own audio.</p>
+        </div>
+
+        <div class="scene scene-check">
+          <div class="token">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/><path d="M9 14.5v3M11.5 12.5v5M14 15v2.5"/></svg>
+            <div><p class="token-name" id="token-name"></p><p class="token-meta" id="token-meta"></p></div>
+          </div>
+          <ul class="checks" id="checks"></ul>
+        </div>
+
+        <div class="scene scene-decode">
+          <div class="lanes">
+            <div class="lane lane-left"><span class="lane-label">Left</span><canvas id="lane-left" aria-hidden="true"></canvas></div>
+            <div class="lane lane-right"><span class="lane-label">Right</span><canvas id="lane-right" aria-hidden="true"></canvas></div>
+            <div class="lane lane-mono"><span class="lane-label">Mono</span><canvas id="lane-mono" aria-hidden="true"></canvas></div>
+          </div>
+          <p class="scene-caption"><span id="rate-from"></span><span class="caption-arrow" aria-hidden="true"></span><span>16 kHz mono</span></p>
+        </div>
+
+        <div class="scene scene-window">
+          <div class="window-track">
+            <canvas id="window-full" aria-hidden="true"></canvas>
+            <canvas id="window-detail" aria-hidden="true"></canvas>
+            <div class="window-box" id="window-box"></div>
+          </div>
+          <p class="scene-caption" id="window-caption"></p>
+        </div>
+
+        <div class="scene scene-mel">
+          <div class="mel-frame" id="mel-frame">
+            <canvas id="mel-canvas" aria-hidden="true"></canvas>
+            <div class="scan-line" id="scan-line" aria-hidden="true"></div>
+            <div class="patch-grid" id="patch-grid" aria-hidden="true"></div>
+          </div>
+          <p class="axis axis-y">80 mel bands, 50 Hz to 8 kHz</p>
+          <p class="scene-caption" id="mel-caption">608 frames of 10 ms</p>
+        </div>
+
+        <div class="scene scene-embed">
+          <canvas id="embed-canvas" aria-hidden="true"></canvas>
+          <div class="probe-row" id="probe-row">
+            <div class="probe-box"><p class="probe-title">Linear probe</p><p class="probe-sub" id="probe-sub"></p></div>
+            <canvas id="probe-canvas" aria-hidden="true"></canvas>
+          </div>
+          <p class="scene-caption" id="embed-caption">One clip embedding of 3,840 values</p>
+        </div>
+      </div>
+
+      <ol class="steps" id="steps"></ol>
+
+      <div class="output" id="output" hidden>
+        <div class="output-main">
+          <h3 id="output-title"></h3>
+          <div id="output-body"></div>
+        </div>
+        <dl class="meta" id="output-meta"></dl>
+      </div>
+    </section>
+  </main>
+
+  <div class="visually-hidden" id="announcer" aria-live="polite"></div>
+
+  <script src="demo-data.js"></script>
+  <script src="dsp.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
