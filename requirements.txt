@@ -1,0 +1,26 @@
+# Backend for the M2D Music Dashboard.
+# PyTorch: install the build that matches your machine first, for example
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121   (NVIDIA GPU)
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu     (CPU only)
+torch>=2.1
+torchaudio>=2.1
+
+# Needed by M2D's portable loader (examples/portable_m2d.py)
+timm>=0.9
+einops
+nnAudio
+
+# Web server, database, audio decoding
+fastapi
+uvicorn[standard]
+python-multipart
+sqlalchemy>=2.0
+soundfile>=0.12
+numpy
+
+# Only for converting probes saved by EVAR (they contain a pickled scikit-learn scaler)
+scikit-learn
+
+# Tests
+pytest
+httpx

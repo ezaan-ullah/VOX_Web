@@ -1,40 +1,117 @@
-# M2D Music Dashboard: demo for the slide 20 video
+# M2D Music Dashboard (Vox)
 
-A standalone version of the dashboard's **Demo** tab (report ch. 4, Figs. 4.4–4.5). You choose a task, give an audio clip, play it, and run it. The site then shows each processing step from Fig. 6.4 and the task-specific output.
+The demonstration dashboard of the Vox FYP (report Chapter 4). It has three tabs:
 
-- **Computed from the uploaded file:** the file checks (with the UC-03 error messages), decoding, the waveform, playback, mono 16 kHz resampling and the 80-band log-mel spectrogram of the first 6.08 s.
-- **Hardcoded:** the model outputs, the step timings, the device and the inference time. All of these live in `demo-data.js`.
+- **Results:** evaluation scores from the database.
+- **Demo:** upload a clip, or pick a sample, and run a music task with the **real** M2D model.
+- **About:** the project, models, datasets and licences.
 
-## Run it
+Nothing on screen is hardcoded. The browser sends the clip to a Python backend (FastAPI), which:
+1. converts it to 16 kHz mono and keeps the first 6.08 s,
+2. runs the frozen **M2D/0.7** encoder using M2D's own front-end,
+3. applies a trained linear probe, and
+4. returns the scores with the measured timings.
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `frontend/` | The page (HTML, CSS, JS), the Lato fonts and the bundled CC-BY sample clip |
+| `backend/app.py` | FastAPI app: API routes, single-worker queue, upload deletion, static files |
+| `backend/vox/` | Reusable package: `audio.py` (decoding, 6.08-s window), `encoder.py` (M2D), `probes.py` (linear probes), `db.py` (SQLite), `service.py` |
+| `backend/scripts/download_models.py` | Downloads the M2D/0.7 weights and M2D's loader (pinned commit) into `~/.cache/vox/models` |
+| `backend/scripts/manage.py` | Developer CLI: register probes, import results, set checkpoints, add samples, status |
+| `backend/tests/` | `pytest` tests: audio window, probes, API, upload deletion, the real encoder |
+| `docs/` | The earlier recorded demo video |
+
+## Setup (once)
 
 ```sh
-./start-demo.sh            # opens a chrome-less 1920x1080 Chrome window
-./start-demo.sh speed=0.8  # slows the processing animation down (0.25–4)
+python -m venv .venv
+.venv\Scripts\pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu   # or the CUDA build on the GPU machine
+.venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\python backend\scripts\download_models.py
 ```
 
-The window closes the local server when you close it. Opening `index.html` directly also works for uploading and playing a file.
+On Linux, use `.venv/bin/...` instead of `.venv\Scripts\...`.
 
-## Recording take
+## Run
 
-1. `./start-demo.sh`, then press F11 for full screen if you want no title bar.
-2. Click **Tagging** or keep **Genre**.
-3. Drag `audio/Volatile Reaction.mp3` onto the drop area, or use **Browse files**.
-4. Press play for a few seconds, then pause.
-5. Click **Run prediction**. The steps take about 9 s at normal speed, then the output appears.
-6. Press **R** to reset everything for another take.
+```sh
+start.bat        # Windows: starts http://127.0.0.1:8000 and opens the browser
+./start.sh       # Linux
+```
 
-The track is "Volatile Reaction" by Kevin MacLeod (incompetech.com), CC BY 4.0. Its credit is shown in the file card and in `CREDITS.txt`; keep it visible in the video or credit it on the slide.
+The server uses the GPU when there is one, otherwise the CPU. For a video take, open `http://127.0.0.1:8000/?record&speed=0.8#demo`: **R** resets, and `speed` slows the step animation.
 
-## Editing the outputs
+## Making the predictions real: register the probes
 
-Every number on screen comes from `demo-data.js`: the scores per task and model, the step names and times, and the inference time. If you use a different clip, change the labels there so they match what the audience hears.
+The encoder works out of the box. Each task also needs a **linear probe** trained on that task's dataset, the same probes as the study's evaluation. Until a probe is registered, the page says "No classifier yet" and never shows invented scores.
 
-## Files
+1. In EVAR (`nttcslab/eval-audio-repr`), run the linear evaluation **with saving switched on**. This writes `weight_params.pth` to the log folder:
+   ```sh
+   python lineareval.py config/m2d.yaml gtzan weight_file=/path/to/checkpoint-300.pth --save=True
+   ```
+   Do this for `gtzan`, `nsynth` (instrument), `nspitch` (pitch) and MagnaTagATune. Use linear probes, the default `hidden=()`.
+2. Register each one:
+   ```sh
+   python backend\scripts\manage.py register-probe --model original --task genre      --evar path\to\log_folder
+   python backend\scripts\manage.py register-probe --model original --task instrument --evar ...
+   python backend\scripts\manage.py register-probe --model original --task pitch      --evar ...
+   python backend\scripts\manage.py register-probe --model original --task tagging    --evar ... --labels mtt_tags.txt
+   ```
+   For tagging, `--labels` is a text file with the 50 tags, one per line, in EVAR's column order. EVAR doesn't save tag names.
+3. Restart the server. `manage.py status` lists what's registered.
 
-| File | Role |
-|---|---|
-| `index.html`, `styles.css` | Layout and styles (Lato, Vox maroon) |
-| `app.js` | Flow, player, pipeline animation, output |
-| `dsp.js` | Decoding, resampling, waveform peaks, log-mel |
-| `demo-data.js` | Hardcoded outputs and timings |
-| `start-demo.sh` | Local server and recording window |
+The conversion reads EVAR's file once, on your machine, and stores a plain tensor file. The server never unpickles anything.
+
+## The further pre-trained model
+
+When training finishes, put the checkpoint under the models folder and point the `further` model at it:
+
+```sh
+python backend\scripts\manage.py set-checkpoint --model further --path m2d_x_music\checkpoint-600.pth
+```
+
+Then register its four probes with `--model further`. The **Compare** option shows both models side by side.
+
+## Results tab
+
+```sh
+python backend\scripts\manage.py import-results results.csv
+```
+
+CSV columns: `model,task,mean,std,ci_low,ci_high,n_seeds`.
+- **Codes:** models `original`, `further`, `mert_v1_95m`, `mert_v0_public`, `musicfm_fma`, `matpac_general`, `matpac_music`; tasks `genre`, `tagging`, `instrument`, `pitch`, `fma_small`.
+- **Scores:** in percent.
+- **Validation:** every row is checked first; nothing is imported if any row is wrong.
+
+## API
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/api/health` | device, loaded models and probes |
+| GET | `/api/models`, `/api/tasks`, `/api/samples` | what the Demo tab can offer |
+| GET | `/api/samples/{code}/audio` | a bundled sample clip |
+| POST | `/api/predict` | form fields `task`, `model`, `compare`, and `file` or `sample`; returns top labels, all scores, the embedding, measured timings, device and queue position |
+| GET | `/api/results?group=` | scores and the music score per model |
+
+## Privacy
+
+- **Uploads:** stored under random names and deleted right after the prediction, with a sweeper for anything older than ten minutes.
+- **Log:** the inference log keeps task, model, source, duration, device, latency and status. It stores no audio, file names or IP addresses.
+- **Accounts:** none.
+
+## Tests
+
+```sh
+.venv\Scripts\python -m pytest backend\tests
+```
+
+The real-encoder test is skipped if the weights haven't been downloaded.
+
+## Credits and licences
+
+- M2D weights and `portable_m2d.py`: NTT Communication Science Laboratories, [nttcslab/m2d](https://github.com/nttcslab/m2d). Downloaded, not redistributed, under their licence (LICENSE.pdf).
+- Music: "Volatile Reaction", Kevin MacLeod (incompetech.com), CC BY 4.0.
+- Font: Lato, SIL Open Font License 1.1.

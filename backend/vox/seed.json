@@ -1,0 +1,39 @@
+{
+  "models": [
+    {"code": "further", "display_name": "Further pre-trained M2D", "kind": "m2d", "group": "further",
+     "description": "M2D-X-Music on 10,000 FMA tracks", "checkpoint_path": null},
+    {"code": "original", "display_name": "Original M2D", "kind": "m2d", "group": "original",
+     "description": "M2D/0.7, pre-trained on AudioSet only",
+     "checkpoint_path": "m2d_vit_base-80x608p16x16-221006-mr7_enconly/checkpoint-300.pth"},
+    {"code": "mert_v1_95m", "display_name": "MERT-v1-95M", "kind": "reference", "group": "reference",
+     "description": "Music model, about 20,000 h of music", "checkpoint_path": null},
+    {"code": "mert_v0_public", "display_name": "MERT-v0-public", "kind": "reference", "group": "reference",
+     "description": "Music model, about 900 h of open music", "checkpoint_path": null},
+    {"code": "musicfm_fma", "display_name": "MusicFM (FMA)", "kind": "reference", "group": "reference",
+     "description": "Music model trained on the whole Free Music Archive", "checkpoint_path": null},
+    {"code": "matpac_general", "display_name": "MATPAC++ (general)", "kind": "reference", "group": "reference",
+     "description": "General-audio model, AudioSet", "checkpoint_path": null},
+    {"code": "matpac_music", "display_name": "MATPAC++ (music)", "kind": "reference", "group": "reference",
+     "description": "MATPAC++ trained on music", "checkpoint_path": null}
+  ],
+  "tasks": [
+    {"code": "genre", "name": "Genre", "dataset": "GTZAN", "size_label": "10 genres", "metric": "accuracy",
+     "multi_label": false, "threshold": null, "in_demo": true, "in_music_score": true, "top_k": 5, "note": ""},
+    {"code": "tagging", "name": "Tagging", "dataset": "MagnaTagATune", "size_label": "50 tags", "metric": "mAP",
+     "multi_label": true, "threshold": 0.5, "in_demo": true, "in_music_score": true, "top_k": 10, "note": ""},
+    {"code": "instrument", "name": "Instrument", "dataset": "NSynth", "size_label": "11 families", "metric": "accuracy",
+     "multi_label": false, "threshold": null, "in_demo": true, "in_music_score": true, "top_k": 3,
+     "note": "This probe was trained on single isolated notes from NSynth, so on a full mix the output is illustrative."},
+    {"code": "pitch", "name": "Pitch", "dataset": "NSynth", "size_label": "MIDI pitch", "metric": "accuracy",
+     "multi_label": false, "threshold": null, "in_demo": true, "in_music_score": true, "top_k": 3,
+     "note": "This probe was trained on single isolated notes from NSynth, so on a full mix the output is illustrative."},
+    {"code": "fma_small", "name": "FMA-small genre", "dataset": "FMA-small", "size_label": "8 genres", "metric": "accuracy",
+     "multi_label": false, "threshold": null, "in_demo": false, "in_music_score": false, "top_k": 3,
+     "note": "Reported separately: it shares its source with the pre-training data."}
+  ],
+  "samples": [
+    {"code": "volatile_reaction", "title": "Volatile Reaction (Kevin MacLeod)", "file_path": "audio/Volatile Reaction.mp3",
+     "licence": "CC BY 4.0", "attribution": "“Volatile Reaction” Kevin MacLeod (incompetech.com), licensed under CC BY 4.0",
+     "source_label": null}
+  ]
+}
