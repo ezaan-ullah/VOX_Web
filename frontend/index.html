@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Demo | M2D Music Dashboard</title>
+  <title>M2D Music Dashboard</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27 fill=%27%236E1D1D%27%3E%3Crect x=%273%27 y=%2712%27 width=%273.4%27 height=%278%27 rx=%271.7%27/%3E%3Crect x=%279%27 y=%277%27 width=%273.4%27 height=%2718%27 rx=%271.7%27/%3E%3Crect x=%2715%27 y=%273%27 width=%273.4%27 height=%2726%27 rx=%271.7%27/%3E%3Crect x=%2721%27 y=%279%27 width=%273.4%27 height=%2714%27 rx=%271.7%27/%3E%3Crect x=%2727%27 y=%2713%27 width=%273.4%27 height=%276%27 rx=%271.7%27/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <a class="skip-link visually-hidden" href="#content">Skip to the demo</a>
+  <a class="skip-link visually-hidden" href="#content">Skip to the content</a>
 
   <header class="topbar">
     <div class="brand">
@@ -21,14 +21,46 @@
     </div>
     <nav aria-label="Dashboard">
       <ul class="tabs">
-        <li><a href="#" aria-disabled="true">Results</a></li>
-        <li><a href="#content" aria-current="page">Demo</a></li>
-        <li><a href="#" aria-disabled="true">About</a></li>
+        <li><a href="#results" data-view="results">Results</a></li>
+        <li><a href="#demo" data-view="demo">Demo</a></li>
+        <li><a href="#about" data-view="about">About</a></li>
       </ul>
     </nav>
   </header>
 
-  <main id="content" tabindex="-1">
+  <p class="server-banner" id="server-banner" role="alert" hidden></p>
+
+  <!-- ===================== Results ===================== -->
+  <section class="view results-view" id="view-results" aria-labelledby="results-title" hidden>
+    <div class="panel results-panel">
+      <div class="results-head">
+        <div>
+          <h1 class="page-title" id="results-title">Research results</h1>
+          <p class="results-sub">Frozen-feature linear evaluation. Scores in percent: accuracy, or mAP for tagging; mean over probe seeds.</p>
+        </div>
+        <label class="filter">Model group
+          <select id="group-filter">
+            <option value="all">All models</option>
+            <option value="original">Original M2D</option>
+            <option value="further">Further pre-trained M2D</option>
+            <option value="reference">Reference models</option>
+          </select>
+        </label>
+      </div>
+      <p class="empty-state" id="results-empty" hidden>No results have been imported yet. They appear here once the evaluation runs are imported with the developer script.</p>
+      <div id="results-body" hidden>
+        <h2 class="section-title">Music score per model</h2>
+        <p class="section-sub">Mean over GTZAN, NSynth instrument, NSynth pitch and MagnaTagATune; shown only when all four are available.</p>
+        <div class="score-bars" id="score-bars"></div>
+        <h2 class="section-title">Per-task scores</h2>
+        <div class="table-wrap"><table class="results-table" id="results-table"></table></div>
+        <p class="section-sub" id="results-notes"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== Demo ===================== -->
+  <main class="view" id="view-demo" tabindex="-1">
     <form id="demo-form" class="panel input-panel" novalidate>
       <h1 class="page-title">Try a music task</h1>
 
@@ -49,6 +81,10 @@
                  accept=".wav,.mp3,audio/wav,audio/x-wav,audio/mpeg" aria-describedby="audio-hint">
           <label for="file-input" class="button button-secondary">Browse files</label>
           <p class="hint" id="audio-hint">At most 10 MB. Only the first 6 s are analyzed.</p>
+          <div class="samples" id="samples" hidden>
+            <p class="hint">Or try a sample clip:</p>
+            <div class="sample-list" id="sample-list"></div>
+          </div>
         </div>
 
         <div class="file-card" id="file-card" hidden>
@@ -83,10 +119,11 @@
       <fieldset class="step">
         <legend><span class="step-num" aria-hidden="true">3</span>Choose a model and run</legend>
         <div class="model-list" id="model-list"></div>
+        <label class="compare-option"><input type="checkbox" id="compare" name="compare"> Compare with the other model</label>
         <button type="submit" class="button button-primary" id="run-button">Run prediction</button>
       </fieldset>
 
-      <p class="disclaimer">Demonstration only: predictions on single clips are not benchmark results. Uploaded audio is deleted after processing.</p>
+      <p class="disclaimer">Demonstration only: predictions on single clips are not benchmark results; those are on the Results tab. Uploaded audio is deleted after processing.</p>
     </form>
 
     <section class="panel process-panel" aria-labelledby="process-title">
@@ -97,7 +134,7 @@
 
       <div class="stage" id="stage" data-scene="idle">
         <div class="scene scene-idle">
-          <p>Add a clip and run a prediction. Each processing step appears here, drawn from your own audio.</p>
+          <p>Add a clip and run a prediction. Each processing step appears here, drawn from your own audio and the model’s real output.</p>
         </div>
 
         <div class="scene scene-check">
@@ -142,25 +179,47 @@
             <div class="probe-box"><p class="probe-title">Linear probe</p><p class="probe-sub" id="probe-sub"></p></div>
             <canvas id="probe-canvas" aria-hidden="true"></canvas>
           </div>
-          <p class="scene-caption" id="embed-caption">One clip embedding of 3,840 values</p>
+          <p class="scene-caption" id="embed-caption">The model’s clip embedding: 3,840 values</p>
         </div>
       </div>
 
       <ol class="steps" id="steps"></ol>
 
       <div class="output" id="output" hidden>
-        <div class="output-main">
-          <h3 id="output-title"></h3>
-          <div id="output-body"></div>
-        </div>
+        <div class="output-main" id="output-main"></div>
         <dl class="meta" id="output-meta"></dl>
       </div>
     </section>
   </main>
 
+  <!-- ===================== About ===================== -->
+  <section class="view about-view" id="view-about" aria-labelledby="about-title" hidden>
+    <div class="panel about-panel">
+      <h1 class="page-title" id="about-title">About this dashboard</h1>
+      <div class="about-grid">
+        <div>
+          <h2 class="section-title">Project</h2>
+          <p>Vox studies what happens when M2D, a general audio model pre-trained on AudioSet, is further pre-trained on a small, open music collection with one GPU, and how the result compares with music-specific models.</p>
+          <h2 class="section-title">Method</h2>
+          <p>M2D is further pre-trained on 10,000 tracks of the Free Music Archive with background noise, a frozen copy of the original model as a teacher, and a pitch (CQT) teacher. Its frozen features are then evaluated with linear probes.</p>
+          <h2 class="section-title">How the demo works</h2>
+          <p>Your clip is sent to the server, converted to 16 kHz mono, and its first 6.08 s are turned into a log-mel spectrogram with M2D’s own front-end. The frozen encoder produces a 3,840-value embedding, and a linear probe trained on the task’s dataset turns it into scores. Every number shown comes from the model; nothing is pre-written.</p>
+        </div>
+        <div>
+          <h2 class="section-title">Models</h2>
+          <p>The original M2D (M2D/0.7, NTT) and the further pre-trained M2D. The Results tab also lists public music models (MERT, MusicFM, MATPAC++) for reference, by their scores only.</p>
+          <h2 class="section-title">Datasets</h2>
+          <p>GTZAN (genre), MagnaTagATune (tagging), NSynth (instrument and pitch) and FMA-small (genre, reported separately). No GTZAN audio is bundled.</p>
+          <h2 class="section-title">Credits and licences</h2>
+          <p>M2D weights and loader: NTT Communication Science Laboratories (nttcslab/m2d), under their licence. Sample music: “Volatile Reaction” by Kevin MacLeod (incompetech.com), CC BY 4.0. Font: Lato, SIL Open Font License.</p>
+        </div>
+      </div>
+      <p class="callout"><strong>Demonstration only.</strong> A prediction on one clip illustrates the models; it does not show which is better. The benchmark scores are those on the Results tab, imported unchanged from the evaluation.</p>
+    </div>
+  </section>
+
   <div class="visually-hidden" id="announcer" aria-live="polite"></div>
 
-  <script src="demo-data.js"></script>
   <script src="dsp.js"></script>
   <script src="app.js"></script>
 </body>
